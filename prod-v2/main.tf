@@ -20,8 +20,11 @@ module "networking" {
   # Subnet configuration
   enable_private_subnets   = true
   enable_database_subnets  = true
-  public_subnet_bits      = 8  # /24 subnets
-  private_subnet_bits     = 8  # /24 subnets
+  
+  # CIDR blocks from variables
+  public_subnet_cidrs      = var.public_subnet_cidrs
+  private_app_subnet_cidrs = var.private_subnet_cidrs_1
+  private_db_subnet_cidrs  = var.private_subnet_cidrs_2
   
   # NAT Gateway configuration
   enable_nat_gateway      = true

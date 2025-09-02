@@ -3,7 +3,7 @@
 variable "aws_region" {
   description = "AWS region for resources"
   type        = string
-  default     = "us-east-1"
+  default     = "ap-south-1"
 }
 
 variable "environment" {
@@ -27,26 +27,26 @@ variable "vpc_cidr" {
 variable "availability_zones" {
   description = "List of availability zones"
   type        = list(string)
-  default     = ["us-east-1a", "us-east-1b", "us-east-1c"]
+  default     = ["ap-south-1a", "ap-south-1b", "ap-south-1c"]
 }
 
 # Subnet CIDR blocks
 variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets"
   type        = list(string)
-  default     = ["10.10.1.0/24", "10.10.2.0/24", "10.10.3.0/24"]
+  default     = ["10.10.192.0/20", "10.10.208.0/20", "10.10.224.0/20"]
 }
 
 variable "private_subnet_cidrs_1" {
   description = "CIDR blocks for first set of private subnets"
   type        = list(string)
-  default     = ["10.10.10.0/24", "10.10.20.0/24", "10.10.30.0/24"]
+  default     = ["10.10.96.0/19", "10.10.128.0/19", "10.10.160.0/19"]
 }
 
 variable "private_subnet_cidrs_2" {
   description = "CIDR blocks for second set of private subnets"
   type        = list(string)
-  default     = ["10.10.11.0/24", "10.10.21.0/24", "10.10.31.0/24"]
+  default     = ["10.10.0.0/19", "10.10.32.0/19", "10.10.64.0/19"]
 }
 
 variable "enable_dns_hostnames" {

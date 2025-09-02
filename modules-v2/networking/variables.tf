@@ -42,16 +42,31 @@ variable "enable_dns_support" {
   default     = true
 }
 
-variable "public_subnet_bits" {
-  description = "Number of additional bits to use for public subnet sizing"
-  type        = number
-  default     = 8
+variable "public_subnet_cidrs" {
+  description = "CIDR blocks for public subnets"
+  type        = list(string)
+  validation {
+    condition     = length(var.public_subnet_cidrs) >= 1
+    error_message = "At least one public subnet CIDR block must be provided."
+  }
 }
 
-variable "private_subnet_bits" {
-  description = "Number of additional bits to use for private subnet sizing"
-  type        = number
-  default     = 8
+variable "private_app_subnet_cidrs" {
+  description = "CIDR blocks for private application subnets"
+  type        = list(string)
+  validation {
+    condition     = length(var.private_app_subnet_cidrs) >= 1 || !var.enable_private_subnets
+    error_message = "At least one private app subnet CIDR block must be provided when enable_private_subnets is true."
+  }
+}
+
+variable "private_db_subnet_cidrs" {
+  description = "CIDR blocks for private database subnets"
+  type        = list(string)
+  validation {
+    condition     = length(var.private_db_subnet_cidrs) >= 1 || !var.enable_database_subnets
+    error_message = "At least one private DB subnet CIDR block must be provided when enable_database_subnets is true."
+  }
 }
 
 variable "enable_private_subnets" {

@@ -31,12 +31,20 @@ locals {
   azs = var.availability_zones != null ? var.availability_zones : slice(data.aws_availability_zones.available.names, 0, var.az_count)
 }
 
-# Public Subnets
+# Use provided CIDR blocks - no fallbacks
+locals {
+  # Use only the provided CIDR blocks from variables
+  public_cidrs = var.public_subnet_cidrs
+  private_app_cidrs = var.private_app_subnet_cidrs
+  private_db_cidrs = var.private_db_subnet_cidrs
+}
+
+# Public Subnets (/20 each = 4,096 IPs)
 resource "aws_subnet" "public" {
   count = length(local.azs)
 
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = cidrsubnet(var.vpc_cidr, var.public_subnet_bits, count.index)
+  cidr_block              = local.public_cidrs[count.index]
   availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
 
@@ -47,12 +55,12 @@ resource "aws_subnet" "public" {
   })
 }
 
-# Private App Subnets
+# Private App Subnets (/19 each = 8,192 IPs)
 resource "aws_subnet" "private_app" {
   count = var.enable_private_subnets ? length(local.azs) : 0
 
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, var.private_subnet_bits, count.index + 10)
+  cidr_block        = local.private_app_cidrs[count.index]
   availability_zone = local.azs[count.index]
 
   tags = merge(var.common_tags, {
@@ -62,12 +70,12 @@ resource "aws_subnet" "private_app" {
   })
 }
 
-# Private DB Subnets
+# Private DB Subnets (/19 each = 8,192 IPs)  
 resource "aws_subnet" "private_db" {
   count = var.enable_database_subnets ? length(local.azs) : 0
 
   vpc_id            = aws_vpc.main.id
-  cidr_block        = cidrsubnet(var.vpc_cidr, var.private_subnet_bits, count.index + 20)
+  cidr_block        = local.private_db_cidrs[count.index]
   availability_zone = local.azs[count.index]
 
   tags = merge(var.common_tags, {

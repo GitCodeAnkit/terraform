@@ -4,7 +4,7 @@
 
 terraform {
   backend "s3" {
-    bucket         = "terraform-state-prod-${random_id.bucket_suffix.hex}"
+    bucket         = "fitsib-terra"
     key            = "prod/terraform.tfstate"
     region         = var.aws_region
     dynamodb_table = "terraform-state-lock-prod"
