@@ -6,7 +6,7 @@ terraform {
   backend "s3" {
     bucket         = "fitsib-terra"
     key            = "prod/terraform.tfstate"
-    region         = var.aws_region
+    region         = "ap-south-1"
     dynamodb_table = "terraform-state-lock-prod"
     encrypt        = true
     

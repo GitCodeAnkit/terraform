@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"networking","Source":"../modules-v2/networking","Dir":"../modules-v2/networking"},{"Key":"routing","Source":"../modules-v2/routing","Dir":"../modules-v2/routing"},{"Key":"vpc_endpoints","Source":"../modules-v2/vpc-endpoints","Dir":"../modules-v2/vpc-endpoints"}]}

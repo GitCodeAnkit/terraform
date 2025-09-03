@@ -20,14 +20,14 @@ output "private_route_table_arns" {
   value       = aws_route_table.private[*].arn
 }
 
-output "database_route_table_id" {
-  description = "ID of the database route table (if created)"
-  value       = var.create_database_route_table ? aws_route_table.database[0].id : null
+output "private_2_route_table_id" {
+  description = "ID of the private_2 route table (if created)"
+  value       = var.create_private_2_route_table ? aws_route_table.private_2[0].id : null
 }
 
-output "database_route_table_arn" {
-  description = "ARN of the database route table (if created)"
-  value       = var.create_database_route_table ? aws_route_table.database[0].arn : null
+output "private_2_route_table_arn" {
+  description = "ARN of the private_2 route table (if created)"
+  value       = var.create_private_2_route_table ? aws_route_table.private_2[0].arn : null
 }
 
 output "all_route_table_ids" {
@@ -35,6 +35,6 @@ output "all_route_table_ids" {
   value = concat(
     [aws_route_table.public.id],
     aws_route_table.private[*].id,
-    var.create_database_route_table ? [aws_route_table.database[0].id] : []
+    var.create_private_2_route_table ? [aws_route_table.private_2[0].id] : []
   )
 }

@@ -50,8 +50,8 @@ variable "enable_nat_routes" {
   default     = true
 }
 
-variable "create_database_route_table" {
-  description = "Create separate route table for database subnets (more secure)"
+variable "create_private_2_route_table" {
+  description = "Create separate route table for private_2 subnets (more secure)"
   type        = bool
   default     = false
 }
@@ -78,8 +78,8 @@ variable "additional_private_routes" {
   default = []
 }
 
-variable "additional_database_routes" {
-  description = "Additional routes for database route table"
+variable "additional_private_2_routes" {
+  description = "Additional routes for private_2 route table"
   type = list(object({
     cidr_block                = string
     gateway_id                = optional(string)

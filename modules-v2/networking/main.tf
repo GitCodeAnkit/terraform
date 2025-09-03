@@ -49,7 +49,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = merge(var.common_tags, {
-    Name = "${var.name_prefix}-public-${substr(local.azs[count.index], -1, 1)}"
+    Name = "${var.name_prefix}-public-${substr(local.azs[count.index])}"
     Type = "public"
     Tier = "public"
   })
@@ -64,7 +64,7 @@ resource "aws_subnet" "private_app" {
   availability_zone = local.azs[count.index]
 
   tags = merge(var.common_tags, {
-    Name = "${var.name_prefix}-private-app-${substr(local.azs[count.index], -1, 1)}"
+    Name = "${var.name_prefix}-private-app-${substr(local.azs[count.index])}"
     Type = "private"
     Tier = "application"
   })
@@ -79,7 +79,7 @@ resource "aws_subnet" "private_db" {
   availability_zone = local.azs[count.index]
 
   tags = merge(var.common_tags, {
-    Name = "${var.name_prefix}-private-db-${substr(local.azs[count.index], -1, 1)}"
+    Name = "${var.name_prefix}-private-db-${substr(local.azs[count.index])}"
     Type = "private"
     Tier = "database"
   })

@@ -56,7 +56,7 @@ module "routing" {
   
   # Routing configuration
   enable_nat_routes              = true
-  create_database_route_table    = false  # Use same routing as app subnets
+  create_private_2_route_table   = false  # Use same routing as app subnets
   
   common_tags = var.common_tags
 }
@@ -82,4 +82,192 @@ module "vpc_endpoints" {
   private_subnet_ids = module.networking.private_app_subnet_ids
   
   common_tags = var.common_tags
+}
+
+# ECS Cluster Module - Container orchestration with EC2 and Spot capacity
+module "ecs" {
+  source = "../modules-v2/ecs"
+
+  name_prefix         = local.name_prefix
+  vpc_id             = module.networking.vpc_id
+  vpc_cidr           = var.vpc_cidr
+  private_subnet_ids = module.networking.private_app_subnet_ids
+  aws_region         = var.aws_region
+
+  # Instance configuration
+  ec2_instance_type  = "t3.medium"
+  spot_instance_type = "t3.medium"
+  spot_max_price     = "0.05"
+
+  # Auto Scaling configuration - EC2
+  ec2_min_capacity     = 1
+  ec2_max_capacity     = 5
+  ec2_desired_capacity = 2
+
+  # Auto Scaling configuration - Spot
+  spot_min_capacity     = 0
+  spot_max_capacity     = 10
+  spot_desired_capacity = 3
+
+  # Capacity provider strategy (favor spot instances for cost savings)
+  default_capacity_provider_base        = 1
+  default_capacity_provider_weight_ec2  = 1
+  default_capacity_provider_weight_spot = 3
+
+  # Security configuration
+  enable_ssh_access   = true
+  ssh_allowed_cidrs   = [var.vpc_cidr]  # Allow SSH only from within VPC
+  create_key_pair     = true
+
+  # ECS configuration
+  enable_container_insights = true
+  log_retention_days       = 30
+
+  # Storage configuration
+  ebs_volume_size = 30
+  ebs_volume_type = "gp3"
+
+  common_tags = var.common_tags
+}
+
+# Application Load Balancer Module - Internet-facing load balancer
+module "alb" {
+  source = "../modules-v2/alb"
+
+  name_prefix = local.name_prefix
+  vpc_id      = module.networking.vpc_id
+  subnet_ids  = module.networking.public_subnet_ids  # Internet-facing ALB in public subnets
+
+  # ALB Configuration
+  internal                          = false
+  enable_deletion_protection        = false
+  enable_http2                     = true
+  enable_cross_zone_load_balancing = true
+
+  # Security Configuration
+  allowed_cidr_blocks = ["0.0.0.0/0"]  # Allow internet access
+
+  # Target Group Configuration
+  target_group_port     = 80    # Container port
+  target_group_protocol = "HTTP"
+  target_type          = "instance"
+
+  # Health Check Configuration
+  health_check_enabled             = true
+  health_check_healthy_threshold   = 2
+  health_check_interval           = 30
+  health_check_matcher            = "200"
+  health_check_path               = "/"
+  health_check_port               = "traffic-port"
+  health_check_protocol           = "HTTP"
+  health_check_timeout            = 5
+  health_check_unhealthy_threshold = 2
+
+  # SSL Configuration - ALB listens on port 443
+  domain_name                = "your-domain.com"  # Replace with your actual domain
+  subject_alternative_names  = ["*.your-domain.com"]
+  # route53_zone_id           = "Z1234567890"  # Uncomment if you have Route53 zone
+
+  # Access Logs (optional)
+  access_logs_enabled = false
+
+  common_tags = var.common_tags
+}
+
+# ECS Service Module - Web application service
+module "ecs_service" {
+  source = "../modules-v2/ecs-service"
+
+  service_name    = "${local.name_prefix}-web-app"
+  cluster_id      = module.ecs.cluster_id
+  cluster_name    = module.ecs.cluster_name
+
+  # Container Configuration
+  container_image  = "nginx:latest"  # Replace with your application image
+  container_name   = "web-app"
+  container_port   = 80    # Container listens on port 80
+  host_port        = 0     # Dynamic port mapping (ALB forwards 443->80)
+
+  # Task Configuration
+  task_cpu    = 256
+  task_memory = 512
+  network_mode = "bridge"
+
+  # Container Resources
+  container_cpu               = 128
+  container_memory            = 256
+  container_memory_reservation = 128
+
+  # IAM Roles
+  execution_role_arn = module.ecs.ecs_task_execution_role_arn
+  task_role_arn     = module.ecs.ecs_task_execution_role_arn
+
+  # Service Configuration
+  desired_count = 2
+
+  # Capacity Provider Strategy (favor spot instances)
+  capacity_provider_strategy = [
+    {
+      capacity_provider = module.ecs.ec2_capacity_provider_name
+      weight           = 1
+      base             = 1
+    },
+    {
+      capacity_provider = module.ecs.spot_capacity_provider_name
+      weight           = 3
+      base             = 0
+    }
+  ]
+
+  # Load Balancer Integration
+  load_balancer_enabled = true
+  load_balancer_config = {
+    target_group_arn = module.alb.primary_target_group_arn
+    container_name   = "web-app"
+    container_port   = 80
+  }
+  load_balancer_dependency = module.alb.http_listener_arn
+
+  # Health Check
+  health_check_grace_period = 300
+
+  # Environment Variables
+  environment_variables = {
+    ENV = "production"
+    APP_NAME = "${local.name_prefix}-web-app"
+    AWS_REGION = var.aws_region
+  }
+
+  # Auto Scaling
+  enable_autoscaling                = true
+  autoscaling_min_capacity         = 2
+  autoscaling_max_capacity         = 10
+  autoscaling_cpu_policy_enabled   = true
+  autoscaling_cpu_target_value     = 70
+  autoscaling_memory_policy_enabled = false
+
+  # Deployment Configuration
+  deployment_maximum_percent         = 200
+  deployment_minimum_healthy_percent = 50
+  deployment_circuit_breaker_enabled = true
+  deployment_circuit_breaker_rollback = true
+
+  # Placement Strategy
+  ordered_placement_strategy = [
+    {
+      type  = "spread"
+      field = "attribute:ecs.availability-zone"
+    },
+    {
+      type  = "spread"
+      field = "instanceId"
+    }
+  ]
+
+  # Logging
+  log_retention_days = 30
+
+  common_tags = var.common_tags
+
+  depends_on = [module.alb, module.ecs]
 }
